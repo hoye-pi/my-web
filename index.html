@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>나를 소개합니다</title>
+    <style>
+        /* 기본 리셋 및 스타일 규칙 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            /* 시원하고 밝은 테마 색상 정의 */
+            --bg-color: #f0f8ff;
+            --card-bg: #ffffff;
+            --primary-color: #0284c7;
+            --primary-hover: #0369a1;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --accent-border: #bae6fd;
+
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            word-break: keep-all;
+            padding: 24px 16px;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* 전체 컨테이너 및 너비 제한 (가로 스크롤 방지) */
+        .container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* 헤더 (프로필) 영역 - 카드 위쪽 배치 */
+        header {
+            text-align: left;
+            margin-bottom: 8px;
+            padding: 8px;
+        }
+
+        header h1 {
+            font-size: 2.25rem;
+            font-weight: 800;
+            color: var(--primary-color);
+            margin-bottom: 4px;
+        }
+
+        header p {
+            font-size: 1.2rem;
+            color: var(--text-sub);
+            font-weight: 600;
+        }
+
+        /* 카드 목록 영역 */
+        .cards-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+        }
+
+        /* 개별 카드 스타일 */
+        .card {
+            background-color: var(--card-bg);
+            border: 2px solid var(--accent-border);
+            border-radius: 16px;
+            padding: 20px 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary-color);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        /* 토글 아이콘 (화살표) */
+        .toggle-icon {
+            font-size: 1.2rem;
+            color: var(--primary-color);
+            transition: transform 0.3s ease;
+            font-weight: bold;
+        }
+
+        .card.active .toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        /* 숨겨진 상세 내용 스타일 및 애니메이션 */
+        .card-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s ease-out, opacity 0.3s ease, margin-top 0.3s ease;
+            opacity: 0;
+            margin-top: 0;
+        }
+
+        .card.active .card-details {
+            max-height: 150px; /* 상세 설명 높이에 맞춰 자동 대응 */
+            opacity: 1;
+            margin-top: 12px;
+        }
+
+        .card-details p {
+            font-size: 1.1rem;
+            color: var(--text-sub);
+            border-top: 1px dashed var(--accent-border);
+            padding-top: 12px;
+        }
+
+        /* 모바일 화면 대응 */
+        @media (max-width: 600px) {
+            .container {
+                gap: 12px;
+            }
+            header {
+                padding: 4px 8px;
+            }
+            header h1 {
+                font-size: 1.8rem;
+            }
+            header p {
+                font-size: 1.05rem;
+            }
+            .card-title {
+                font-size: 1.2rem;
+            }
+            .card-details p {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- 상단 프로필 정보 영역 -->
+        <header>
+            <h1>한규린</h1>
+            <p>해연중 1학년</p>
+        </header>
+
+        <!-- 카드 목록 -->
+        <main class="cards-container">
+            <!-- 카드 1: MBTI -->
+            <div class="card" onclick="toggleCard(this)">
+                <div class="card-header">
+                    <span class="card-title">🧩 MBTI</span>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="card-details">
+                    <p>ISTP</p>
+                </div>
+            </div>
+
+            <!-- 카드 2: 취미 -->
+            <div class="card" onclick="toggleCard(this)">
+                <div class="card-header">
+                    <span class="card-title">🎸 취미</span>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="card-details">
+                    <p>기타 치기 / 노래 듣기</p>
+                </div>
+            </div>
+
+            <!-- 카드 3: 좋아하는 것 -->
+            <div class="card" onclick="toggleCard(this)">
+                <div class="card-header">
+                    <span class="card-title">💙 좋아하는 것</span>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="card-details">
+                    <p>소설책 / 간식</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 카드를 클릭했을 때 펼쳐짐/접힘 상태를 토글하는 함수
+        function toggleCard(cardElement) {
+            // 클릭한 카드의 active 클래스를 토글
+            cardElement.classList.toggle('active');
+        }
+    </script>
+</body>
+</html>
