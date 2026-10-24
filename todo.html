@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>오늘 할 일</title>
+    <style>
+        /* 기본 리셋 및 스타일 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f8fafc;
+            color: #1e293b;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px 16px;
+        }
+
+        /* 메인 컨테이너 */
+        .container {
+            width: 100%;
+            max-width: 480px;
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            border: 1px solid #e2e8f0;
+            position: relative;
+        }
+
+        /* 상단 유저 헤더 / 로그인 상태 */
+        .user-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid #cbd5e1;
+        }
+
+        .user-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .auth-btn {
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #475569;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .auth-btn:hover {
+            background-color: #f1f5f9;
+            color: #0f172a;
+        }
+
+        .login-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 40px 20px;
+            gap: 16px;
+        }
+
+        .login-card h2 {
+            font-size: 1.3rem;
+            color: #0f172a;
+        }
+
+        .login-card p {
+            font-size: 0.9rem;
+            color: #64748b;
+            line-height: 1.5;
+        }
+
+        .google-login-btn {
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #1e293b;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+        }
+
+        .google-login-btn:hover {
+            background-color: #f8fafc;
+            border-color: #94a3b8;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.08);
+        }
+
+        /* 클라우드 상태 메시지 표시 */
+        .sync-status {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .sync-status.saved {
+            color: #059669;
+            background-color: #ecfdf5;
+        }
+
+        .sync-status.saving {
+            color: #d97706;
+            background-color: #fffbeb;
+        }
+
+        .sync-status.error {
+            color: #dc2626;
+            background-color: #fef2f2;
+        }
+
+        /* 1. 헤더 영역 (날짜 + 제목) */
+        .header {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .date-display {
+            font-size: 0.9rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        /* 2. 진행률 영역 */
+        .progress-section {
+            background-color: #f1f5f9;
+            padding: 16px;
+            border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .progress-text {
+            color: #475569;
+        }
+
+        .progress-count {
+            color: #4f46e5;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 10px;
+            background-color: #cbd5e1;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background-color: #4f46e5;
+            border-radius: 5px;
+            transition: width 0.3s ease;
+        }
+
+        /* 카테고리 필터 탭 */
+        .category-filter {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            scrollbar-width: none;
+        }
+
+        .category-filter::-webkit-scrollbar {
+            display: none;
+        }
+
+        .filter-btn {
+            background-color: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            color: #64748b;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active {
+            background-color: #4f46e5;
+            color: #ffffff;
+            border-color: #4f46e5;
+        }
+
+        /* 3. 입력 폼 */
+        .input-form {
+            display: flex;
+            gap: 8px;
+        }
+
+        .category-select {
+            padding: 12px 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            outline: none;
+            background-color: #ffffff;
+            color: #334155;
+            cursor: pointer;
+        }
+
+        .todo-input {
+            flex: 1;
+            padding: 12px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+            min-width: 0;
+        }
+
+        .todo-input:focus, .category-select:focus {
+            border-color: #4f46e5;
+        }
+
+        .add-btn {
+            background-color: #4f46e5;
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            padding: 0 18px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            white-space: nowrap;
+        }
+
+        .add-btn:hover {
+            background-color: #4338ca;
+        }
+
+        /* 4. 할 일 목록 */
+        .todo-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .todo-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            padding: 12px 14px;
+            border-radius: 14px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            transition: all 0.2s ease;
+        }
+
+        .todo-item:hover {
+            border-color: #cbd5e1;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .todo-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            overflow: hidden;
+            margin-right: 8px;
+        }
+
+        .checkbox-btn {
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
+            border: 2px solid #cbd5e1;
+            background: #ffffff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        .todo-item.completed .checkbox-btn {
+            background-color: #10b981;
+            border-color: #10b981;
+        }
+
+        .todo-item.completed .checkbox-btn::after {
+            content: '✓';
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .category-tag {
+            font-size: 0.75rem;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .category-tag.공부 { background-color: #dbeafe; color: #1e40af; }
+        .category-tag.준비물 { background-color: #fef3c7; color: #92400e; }
+        .category-tag.스마트폰 { background-color: #fce7f3; color: #9d174d; }
+        .category-tag.기타 { background-color: #e2e8f0; color: #334155; }
+
+        .todo-text {
+            font-size: 0.95rem;
+            color: #2d3748;
+            transition: color 0.2s;
+            word-break: break-all;
+        }
+
+        .todo-item.completed .todo-text {
+            text-decoration: line-through;
+            color: #a0aec0;
+        }
+
+        .item-actions {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .star-btn {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #cbd5e1;
+            padding: 4px;
+            line-height: 1;
+            transition: color 0.2s, transform 0.1s;
+        }
+
+        .star-btn.starred {
+            color: #eab308;
+        }
+
+        .star-btn:hover {
+            transform: scale(1.15);
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+            border-radius: 6px;
+            transition: color 0.2s;
+        }
+
+        .delete-btn:hover {
+            color: #ef4444;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .page-btn {
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #475569;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .page-btn:hover:not(:disabled) {
+            background-color: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .page-btn.active {
+            background-color: #4f46e5;
+            color: #ffffff;
+            border-color: #4f46e5;
+        }
+
+        .page-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #94a3b8;
+            padding: 30px 10px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .footer-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 10px;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .clear-btn {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            color: #64748b;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .clear-btn:hover {
+            background-color: #fee2e2;
+            color: #dc2626;
+            border-color: #fca5a5;
+        }
+
+        .storage-notice {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        .error-banner {
+            background-color: #fef2f2;
+            border: 1px solid #fca5a5;
+            color: #991b1b;
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            word-break: break-all;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- 상단 오류 배너 -->
+        <div class="error-banner" id="error-banner"></div>
+
+        <!-- 로그인 안 된 상태의 대문 카드 -->
+        <div class="login-card" id="login-card" style="display: none;">
+            <h2>오늘 할 일 목록</h2>
+            <p>구글 계정으로 로그인하면 언제 어디서나 안전하게 클라우드에 내 할 일을 보관할 수 있습니다.</p>
+            <button type="button" class="google-login-btn" id="google-login-btn">
+                <svg width="18" height="18" viewBox="0 0 18 18">
+                    <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
+                    <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+                    <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
+                    <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+                </svg>
+                구글 계정으로 로그인
+            </button>
+        </div>
+
+        <!-- 로그인 후 표시될 메인 콘텐츠 앱 영역 -->
+        <div id="app-content" style="display: none;">
+            <!-- 유저 및 시스템 상태 표시바 -->
+            <div class="user-bar">
+                <div class="user-info">
+                    <img src="" alt="Avatar" class="user-avatar" id="user-avatar">
+                    <span class="user-name" id="user-name">사용자</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="sync-status saved" id="sync-status">저장됨</span>
+                    <button type="button" class="auth-btn" id="logout-btn">로그아웃</button>
+                </div>
+            </div>
+
+            <!-- 1. 날짜 및 헤더 -->
+            <div class="header" style="margin-top: 12px;">
+                <div class="header-top">
+                    <div class="date-display" id="date-display">2026년 10월 12일 월요일</div>
+                </div>
+                <h1 class="title">오늘 할 일</h1>
+            </div>
+
+            <!-- 2. 진행률 카운트 및 막대 그래프 -->
+            <div class="progress-section" style="margin-top: 16px;">
+                <div class="progress-info">
+                    <span class="progress-text">오늘의 달성도</span>
+                    <span class="progress-count" id="progress-count">0 / 0</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progress-bar-fill"></div>
+                </div>
+            </div>
+
+            <!-- 카테고리 필터 탭 -->
+            <div class="category-filter" id="category-filter" style="margin-top: 16px;">
+                <button type="button" class="filter-btn active" data-category="전체">전체</button>
+                <button type="button" class="filter-btn" data-category="공부">공부</button>
+                <button type="button" class="filter-btn" data-category="준비물">준비물</button>
+                <button type="button" class="filter-btn" data-category="스마트폰">스마트폰</button>
+                <button type="button" class="filter-btn" data-category="기타">기타</button>
+                <button type="button" class="filter-btn" data-category="중요⭐">중요⭐</button>
+            </div>
+
+            <!-- 3. 입력 폼 -->
+            <form class="input-form" id="todo-form" style="margin-top: 16px;">
+                <select class="category-select" id="category-select">
+                    <option value="공부" selected>공부</option>
+                    <option value="준비물">준비물</option>
+                    <option value="스마트폰">스마트폰</option>
+                    <option value="기타">기타</option>
+                </select>
+                <input 
+                    type="text" 
+                    class="todo-input" 
+                    id="todo-input" 
+                    placeholder="오늘 할 일을 입력하세요" 
+                    autocomplete="off"
+                    required
+                >
+                <button type="submit" class="add-btn">추가</button>
+            </form>
+
+            <!-- 4. 할 일 목록 -->
+            <ul class="todo-list" id="todo-list" style="margin-top: 16px;"></ul>
+
+            <!-- 페이지네이션 컨트롤 -->
+            <div class="pagination" id="pagination" style="display: none;"></div>
+
+            <!-- 5. 빈 목록 안내 메시지 -->
+            <div class="empty-state" id="empty-state">
+                오늘 할 일이 없습니다.<br>새로운 할 일을 추가해 보세요!
+            </div>
+
+            <!-- 6. 완료된 항목 정리 -->
+            <div class="footer-controls" style="margin-top: 16px;">
+                <button type="button" class="clear-btn" id="clear-btn">완료한 것 치우기</button>
+            </div>
+        </div>
+
+        <div class="storage-notice" id="storage-notice" style="margin-top: 16px;">
+            내 할 일은 내 계정에만 저장되고 다른 사람은 볼 수 없습니다
+        </div>
+    </div>
+
+    <!-- Firebase SDK v10 모듈 방식으로 로드 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { 
+            getAuth, 
+            GoogleAuthProvider, 
+            signInWithPopup, 
+            signOut, 
+            onAuthStateChanged,
+            signInWithCustomToken,
+            signInAnonymously
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            getDoc, 
+            setDoc 
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // ==========================================
+        // 1. 파이어베이스 설정값 (필요 시 아래 객체를 직접 수정 가능)
+        // ==========================================
+        const defaultFirebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            // 사용자의 firebaseConfig를 여기에 자유롭게 배치할 수 있습니다.
+            apiKey: "",
+            authDomain: "",
+            projectId: "",
+            storageBucket: "",
+            messagingSenderId: "",
+            appId: ""
+        };
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-todo-app';
+        const STORAGE_KEY = 'daily_todos_data_fallback';
+        
+        let app, auth, db;
+        let currentUser = null;
+        let isCloudMode = false;
+        let saveTimeout = null;
+
+        // UI 요소 가져오기
+        const loginCardEl = document.getElementById('login-card');
+        const appContentEl = document.getElementById('app-content');
+        const googleLoginBtn = document.getElementById('google-login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const userAvatarEl = document.getElementById('user-avatar');
+        const userNameEl = document.getElementById('user-name');
+        const syncStatusEl = document.getElementById('sync-status');
+        const errorBannerEl = document.getElementById('error-banner');
+        const storageNoticeEl = document.getElementById('storage-notice');
+
+        const dateDisplayEl = document.getElementById('date-display');
+        const progressCountEl = document.getElementById('progress-count');
+        const progressBarFillEl = document.getElementById('progress-bar-fill');
+        const todoFormEl = document.getElementById('todo-form');
+        const todoInputEl = document.getElementById('todo-input');
+        const categorySelectEl = document.getElementById('category-select');
+        const categoryFilterContainer = document.getElementById('category-filter');
+        const todoListEl = document.getElementById('todo-list');
+        const emptyStateEl = document.getElementById('empty-state');
+        const clearBtnEl = document.getElementById('clear-btn');
+        const paginationEl = document.getElementById('pagination');
+
+        let currentFilter = '전체';
+        let currentPage = 1;
+        const ITEMS_PER_PAGE = 6;
+        let todos = [];
+
+        // 오류 표시 함수
+        function showError(msg) {
+            if (!msg) {
+                errorBannerEl.style.display = 'none';
+                errorBannerEl.textContent = '';
+                return;
+            }
+            errorBannerEl.style.display = 'block';
+            errorBannerEl.textContent = `[안내/오류] ${msg}`;
+        }
+
+        // 동기화 상태 표시 (저장 중... / 저장됨 / 오류)
+        function setSyncStatus(type, text) {
+            syncStatusEl.className = `sync-status ${type}`;
+            syncStatusEl.textContent = text;
+        }
+
+        // Firebase 초기화 시도
+        try {
+            if (defaultFirebaseConfig && defaultFirebaseConfig.projectId) {
+                app = initializeApp(defaultFirebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                isCloudMode = true;
+            } else {
+                fallbackToLocalMode("Firebase 설정값이 없습니다. 오프라인 연습 모드로 작동합니다.");
+            }
+        } catch (err) {
+            console.warn("Firebase 초기화 에러:", err);
+            fallbackToLocalMode("Firebase를 불러올 수 없습니다. 오프라인 연습 모드로 전환합니다.");
+        }
+
+        // 로컬 연습 모드로 폴백
+        function fallbackToLocalMode(noticeMsg) {
+            isCloudMode = false;
+            showError(noticeMsg);
+            loginCardEl.style.display = 'none';
+            appContentEl.style.display = 'block';
+            userAvatarEl.style.display = 'none';
+            userNameEl.textContent = '연습 모드 사용자';
+            logoutBtn.style.display = 'none';
+            syncStatusEl.className = 'sync-status saved';
+            syncStatusEl.textContent = '로컬 저장';
+            storageNoticeEl.textContent = '이 목록은 지금 쓰는 브라우저에만 저장됩니다 (오프라인 모드)';
+            loadLocalTodos();
+            render();
+        }
+
+        // Auth 상태 감지
+        if (isCloudMode && auth) {
+            // 커스텀 토큰이 전달된 환경 지원
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                signInWithCustomToken(auth, __initial_auth_token).catch(() => {
+                    signInAnonymously(auth);
+                });
+            }
+
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    currentUser = user;
+                    showError(''); // 기존 에러 메시지 초기화
+                    loginCardEl.style.display = 'none';
+                    appContentEl.style.display = 'block';
+
+                    userNameEl.textContent = user.displayName || user.email || '구글 사용자';
+                    userAvatarEl.src = user.photoURL || 'https://placehold.co/32x32/cbd5e1/334155?text=U';
+                    userAvatarEl.style.display = 'block';
+                    logoutBtn.style.display = 'block';
+
+                    storageNoticeEl.textContent = '내 할 일은 내 계정에만 저장되고 다른 사람은 볼 수 없습니다';
+
+                    // 데이터 불러오기
+                    await fetchCloudTodos();
+                    render();
+                } else {
+                    currentUser = null;
+                    loginCardEl.style.display = 'flex';
+                    appContentEl.style.display = 'none';
+                }
+            });
+        }
+
+        // 구글 로그인 실행
+        googleLoginBtn.addEventListener('click', async () => {
+            if (!auth) {
+                fallbackToLocalMode("인터넷 연결 또는 Firebase 설정을 확인해 주세요.");
+                return;
+            }
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                console.error("Google 로그인 실패:", error);
+                showError(`로그인 실패 [${error.code || 'UNKNOWN'}]: ${error.message}`);
+            }
+        });
+
+        // 로그아웃
+        logoutBtn.addEventListener('click', async () => {
+            if (auth) {
+                await signOut(auth);
+            }
+        });
+
+        // Cloud에서 데이터 가져오기
+        async function fetchCloudTodos() {
+            if (!currentUser || !db) return;
+            setSyncStatus('saving', '불러오는 중...');
+            try {
+                // 문서 경로: artifacts/{appId}/users/{userId}/data/todos
+                const userDocRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'data', 'todos');
+                const docSnap = await getDoc(userDocRef);
+
+                if (docSnap.exists() && docSnap.data().items) {
+                    todos = docSnap.data().items;
+                } else {
+                    todos = [];
+                }
+                setSyncStatus('saved', '저장됨');
+            } catch (err) {
+                console.error("클라우드 읽기 오류:", err);
+                setSyncStatus('error', '불러오기 실패');
+                showError(`데이터 불러오기 실패: ${err.message}`);
+                // 읽기 오류 시 로컬 데이터 시도
+                loadLocalTodos();
+            }
+        }
+
+        // Cloud / Local 저장 통합 함수 (0.6초 디바운스 적용)
+        function triggerSave() {
+            setSyncStatus('saving', '저장 중…');
+
+            if (saveTimeout) clearTimeout(saveTimeout);
+
+            saveTimeout = setTimeout(async () => {
+                if (isCloudMode && currentUser && db) {
+                    try {
+                        const userDocRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'data', 'todos');
+                        await setDoc(userDocRef, { items: todos }, { merge: true });
+                        setSyncStatus('saved', '저장됨');
+                    } catch (err) {
+                        console.error("클라우드 저장 오류:", err);
+                        setSyncStatus('error', '저장 실패');
+                        showError(`클라우드 저장 실패: ${err.message}`);
+                        // 디바이스 로컬 저장 보완
+                        saveLocalTodos();
+                    }
+                } else {
+                    saveLocalTodos();
+                    setSyncStatus('saved', '로컬 저장됨');
+                }
+            }, 600); // 0.6초 대기 후 1회 저장
+        }
+
+        function loadLocalTodos() {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            if (savedData) {
+                try {
+                    todos = JSON.parse(savedData);
+                } catch (e) {
+                    todos = [];
+                }
+            } else {
+                todos = [];
+            }
+        }
+
+        function saveLocalTodos() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+        }
+
+        // 한국어 날짜 표시
+        function setKoreanDate() {
+            const today = new Date();
+            const days = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+            
+            const year = today.getFullYear();
+            const month = today.getMonth() + 1;
+            const date = today.getDate();
+            const dayName = days[today.getDay()];
+
+            dateDisplayEl.textContent = `${year}년 ${month}월 ${date}일 ${dayName}`;
+        }
+
+        // UI 및 상태 업데이트 (렌더링)
+        function render() {
+            todoListEl.innerHTML = '';
+
+            let filteredTodos = todos;
+            if (currentFilter === '중요⭐') {
+                filteredTodos = todos.filter(t => t.starred);
+            } else if (currentFilter !== '전체') {
+                filteredTodos = todos.filter(t => t.category === currentFilter);
+            }
+
+            const totalPages = Math.ceil(filteredTodos.length / ITEMS_PER_PAGE) || 1;
+            if (currentPage > totalPages) {
+                currentPage = totalPages;
+            }
+
+            if (filteredTodos.length === 0) {
+                emptyStateEl.style.display = 'block';
+                paginationEl.style.display = 'none';
+                if (currentFilter !== '전체') {
+                    emptyStateEl.innerHTML = `'${currentFilter}' 항목에 속한 할 일이 없습니다.`;
+                } else {
+                    emptyStateEl.innerHTML = '오늘 할 일이 없습니다.<br>새로운 할 일을 추가해 보세요!';
+                }
+            } else {
+                emptyStateEl.style.display = 'none';
+
+                const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+                const paginatedTodos = filteredTodos.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+                paginatedTodos.forEach((todo) => {
+                    const li = document.createElement('li');
+                    li.className = `todo-item ${todo.completed ? 'completed' : ''}`;
+
+                    li.innerHTML = `
+                        <div class="todo-content">
+                            <button type="button" class="checkbox-btn" aria-label="완료 체크"></button>
+                            <span class="category-tag ${todo.category || '기타'}">${todo.category || '기타'}</span>
+                            <span class="todo-text"></span>
+                        </div>
+                        <div class="item-actions">
+                            <button type="button" class="star-btn ${todo.starred ? 'starred' : ''}" aria-label="중요 표시">${todo.starred ? '★' : '☆'}</button>
+                            <button type="button" class="delete-btn" aria-label="삭제">&times;</button>
+                        </div>
+                    `;
+
+                    li.querySelector('.todo-text').textContent = todo.text;
+
+                    const checkboxBtn = li.querySelector('.checkbox-btn');
+                    checkboxBtn.addEventListener('click', () => toggleTodo(todo.id));
+
+                    const starBtn = li.querySelector('.star-btn');
+                    starBtn.addEventListener('click', () => toggleStar(todo.id));
+
+                    const deleteBtn = li.querySelector('.delete-btn');
+                    deleteBtn.addEventListener('click', () => deleteTodo(todo.id));
+
+                    todoListEl.appendChild(li);
+                });
+
+                renderPagination(totalPages);
+            }
+
+            updateProgress();
+        }
+
+        function renderPagination(totalPages) {
+            if (totalPages <= 1) {
+                paginationEl.style.display = 'none';
+                return;
+            }
+
+            paginationEl.style.display = 'flex';
+            paginationEl.innerHTML = '';
+
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'page-btn';
+            prevBtn.textContent = '이전';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    render();
+                }
+            });
+            paginationEl.appendChild(prevBtn);
+
+            for (let i = 1; i <= totalPages; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+                pageBtn.textContent = i;
+                pageBtn.addEventListener('click', () => {
+                    currentPage = i;
+                    render();
+                });
+                paginationEl.appendChild(pageBtn);
+            }
+
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'page-btn';
+            nextBtn.textContent = '다음';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    render();
+                }
+            });
+            paginationEl.appendChild(nextBtn);
+        }
+
+        function updateProgress() {
+            const totalCount = todos.length;
+            const completedCount = todos.filter(t => t.completed).length;
+
+            progressCountEl.textContent = `${completedCount} / ${totalCount}`;
+
+            const percent = totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100);
+            progressBarFillEl.style.width = `${percent}%`;
+        }
+
+        function addTodo(text, category) {
+            const trimmedText = text.trim();
+            if (!trimmedText) return;
+
+            const newTodo = {
+                id: Date.now(),
+                text: trimmedText,
+                category: category || '기타',
+                starred: false,
+                completed: false
+            };
+
+            todos.push(newTodo);
+            triggerSave();
+            
+            let filteredLength = todos.length;
+            if (currentFilter === '중요⭐') {
+                filteredLength = todos.filter(t => t.starred).length;
+            } else if (currentFilter !== '전체') {
+                filteredLength = todos.filter(t => t.category === currentFilter).length;
+            }
+            currentPage = Math.ceil(filteredLength / ITEMS_PER_PAGE) || 1;
+
+            render();
+        }
+
+        function toggleTodo(id) {
+            todos = todos.map(todo => {
+                if (todo.id === id) {
+                    return { ...todo, completed: !todo.completed };
+                }
+                return todo;
+            });
+            triggerSave();
+            render();
+        }
+
+        function toggleStar(id) {
+            todos = todos.map(todo => {
+                if (todo.id === id) {
+                    return { ...todo, starred: !todo.starred };
+                }
+                return todo;
+            });
+            triggerSave();
+            render();
+        }
+
+        function deleteTodo(id) {
+            todos = todos.filter(todo => todo.id !== id);
+            triggerSave();
+            render();
+        }
+
+        function clearCompleted() {
+            todos = todos.filter(todo => !todo.completed);
+            triggerSave();
+            render();
+        }
+
+        // 이벤트 리스너
+        todoFormEl.addEventListener('submit', (e) => {
+            e.preventDefault();
+            addTodo(todoInputEl.value, categorySelectEl.value);
+            todoInputEl.value = '';
+            todoInputEl.focus();
+        });
+
+        clearBtnEl.addEventListener('click', clearCompleted);
+
+        categoryFilterContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('filter-btn')) {
+                document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                currentFilter = e.target.dataset.category;
+                currentPage = 1;
+                render();
+            }
+        });
+
+        // 초기화
+        setKoreanDate();
+    </script>
+</body>
+</html>
