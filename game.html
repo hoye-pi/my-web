@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>단어 산성비 게임</title>
+    <style>
+        /* 기본 리셋 및 스타일 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #0b132b;
+            color: #e0f2fe;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        /* 상단 헤더: 시간 및 점수 표시 */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            background-color: #1c2541;
+            border-bottom: 2px solid #2a3d66;
+            z-index: 10;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #93c5fd;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #38bdf8;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .stat-value.time {
+            color: #f43f5e;
+        }
+
+        /* 목숨 표시 스타일 */
+        .lives-container {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 4px;
+        }
+
+        .heart {
+            color: #f43f5e;
+            font-size: 1.4rem;
+            transition: transform 0.2s, opacity 0.2s;
+            filter: drop-shadow(0 2px 6px rgba(244, 63, 94, 0.5));
+        }
+
+        .heart.lost {
+            opacity: 0.2;
+            transform: scale(0.8);
+            filter: grayscale(100%);
+        }
+
+        /* 바닥 경고 효과 */
+        @keyframes flashDanger {
+            0% { background-color: rgba(244, 63, 94, 0.4); }
+            100% { background-color: transparent; }
+        }
+
+        .danger-flash {
+            animation: flashDanger 0.4s ease-out;
+        }
+
+        /* 게임 메인 화면 영역 */
+        #game-container {
+            flex: 1;
+            position: relative;
+            background: linear-gradient(180deg, #0b132b 0%, #1c2541 100%);
+            overflow: hidden;
+        }
+
+        /* 데드라인 (바닥 라인) */
+        .danger-zone {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 12px;
+            background: repeating-linear-gradient(
+                45deg,
+                #f43f5e,
+                #f43f5e 10px,
+                #be123c 10px,
+                #be123c 20px
+            );
+            box-shadow: 0 -4px 12px rgba(244, 63, 94, 0.4);
+        }
+
+        /* 떨어지는 단어 객체 스타일 */
+        .falling-word {
+            position: absolute;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #f0f9ff;
+            background-color: rgba(30, 58, 138, 0.85);
+            padding: 8px 18px;
+            border-radius: 20px;
+            border: 2px solid #38bdf8;
+            box-shadow: 0 4px 16px rgba(56, 189, 248, 0.25);
+            white-space: nowrap;
+            transform: translateX(-50%);
+            transition: background-color 0.1s, border-color 0.1s;
+        }
+
+        /* 하단 키보드 입력 영역 */
+        #input-container {
+            padding: 12px;
+            background-color: #0f172a;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 10;
+            border-top: 2px solid #1e293b;
+        }
+
+        #display-bar {
+            background-color: #1e293b;
+            border: 2px solid #334155;
+            border-radius: 12px;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #f8fafc;
+            letter-spacing: 2px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        #typed-text {
+            color: #38bdf8;
+            min-height: 1.5rem;
+        }
+
+        .backspace-btn {
+            background-color: #475569;
+            color: #f8fafc;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 14px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.05s, background-color 0.1s;
+        }
+
+        .backspace-btn:active {
+            transform: scale(0.92);
+            background-color: #334155;
+        }
+
+        /* 가상 자음/모음 키보드 */
+        .keyboard {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .key-row {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            width: 100%;
+        }
+
+        .key {
+            flex: 1;
+            max-width: 48px;
+            height: 48px;
+            background-color: #1e293b;
+            color: #e2e8f0;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 0 #0f172a;
+            transition: transform 0.05s, background-color 0.05s, box-shadow 0.05s;
+            touch-action: manipulation;
+        }
+
+        /* 버튼 피드백 애니메이션 */
+        .key:active {
+            transform: translateY(3px);
+            box-shadow: 0 0 0 #0f172a;
+            background-color: #0284c7;
+            color: #ffffff;
+        }
+
+        .key.action-key {
+            background-color: #0284c7;
+            color: #ffffff;
+            border: none;
+            box-shadow: 0 3px 0 #0369a1;
+            max-width: 70px;
+        }
+
+        .key.action-key:active {
+            background-color: #0369a1;
+            box-shadow: 0 0 0 #0369a1;
+        }
+
+        /* 오버레이 (시작 화면 / 게임 오버 화면) */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(11, 19, 43, 0.92);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(8px);
+        }
+
+        .overlay h1 {
+            font-size: 2.4rem;
+            margin-bottom: 12px;
+            color: #38bdf8;
+            text-shadow: 0 2px 10px rgba(56, 189, 248, 0.3);
+        }
+
+        .overlay p {
+            font-size: 1.1rem;
+            color: #94a3b8;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .result-score {
+            font-size: 4rem;
+            font-weight: 900;
+            color: #fbbf24;
+            margin: 16px 0;
+            text-shadow: 0 4px 16px rgba(251, 191, 36, 0.3);
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            color: white;
+            border: 1px solid #38bdf8;
+            padding: 16px 40px;
+            font-size: 1.3rem;
+            font-weight: 800;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(2, 132, 199, 0.5);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+
+        .start-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 10px rgba(2, 132, 199, 0.4);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <script>
+        // 요구 규격 상수
+        const GAME_ID = 'my-game';
+    </script>
+
+    <!-- 상단 대형 점수 및 시간 표시판 -->
+    <header>
+        <div class="stat-box">
+            <span class="stat-label">남은 시간</span>
+            <span id="time-display" class="stat-value time">60</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">남은 목숨</span>
+            <div id="lives-display" class="lives-container">
+                <span class="heart">♥</span>
+                <span class="heart">♥</span>
+                <span class="heart">♥</span>
+            </div>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">현재 점수</span>
+            <span id="score-display" class="stat-value">0</span>
+        </div>
+    </header>
+
+    <!-- 단어가 내려오는 게임 화면 영역 -->
+    <main id="game-container">
+        <div class="danger-zone"></div>
+        
+        <!-- 시작 오버레이 -->
+        <div id="start-overlay" class="overlay">
+            <h1>단어 산성비</h1>
+            <p>1분 동안 떨어지는 단어를 입력하세요!<br>바닥에 닿으면 목숨(♥)이 줄어듭니다.</p>
+            <button class="start-btn" onclick="startGame()">게임 시작</button>
+        </div>
+
+        <!-- 결과 오버레이 -->
+        <div id="game-over-overlay" class="overlay hidden">
+            <h1>게임 종료</h1>
+            <p>최종 점수</p>
+            <div id="final-score" class="result-score">0</div>
+            <button class="start-btn" onclick="startGame()">다시 하기</button>
+        </div>
+    </main>
+
+    <!-- 가상 타자 입력기 영역 (모바일/터치 최적화) -->
+    <footer id="input-container">
+        <div id="display-bar">
+            <span id="typed-text"></span>
+            <button class="backspace-btn" onclick="handleBackspace()">지우기</button>
+        </div>
+        
+        <div class="keyboard">
+            <div class="key-row">
+                <button class="key" onclick="handleInput('ㅂ')">ㅂ</button>
+                <button class="key" onclick="handleInput('ㅈ')">ㅈ</button>
+                <button class="key" onclick="handleInput('ㄷ')">ㄷ</button>
+                <button class="key" onclick="handleInput('ㄱ')">ㄱ</button>
+                <button class="key" onclick="handleInput('ㅅ')">ㅅ</button>
+                <button class="key" onclick="handleInput('ㅛ')">ㅛ</button>
+                <button class="key" onclick="handleInput('ㅕ')">ㅕ</button>
+                <button class="key" onclick="handleInput('ㅑ')">ㅑ</button>
+                <button class="key" onclick="handleInput('ㅐ')">ㅐ</button>
+                <button class="key" onclick="handleInput('ㅔ')">ㅔ</button>
+            </div>
+            <div class="key-row">
+                <button class="key" onclick="handleInput('ㅁ')">ㅁ</button>
+                <button class="key" onclick="handleInput('ㄴ')">ㄴ</button>
+                <button class="key" onclick="handleInput('ㅇ')">ㅇ</button>
+                <button class="key" onclick="handleInput('ㄹ')">ㄹ</button>
+                <button class="key" onclick="handleInput('ㅎ')">ㅎ</button>
+                <button class="key" onclick="handleInput('ㅗ')">ㅗ</button>
+                <button class="key" onclick="handleInput('ㅓ')">ㅓ</button>
+                <button class="key" onclick="handleInput('ㅏ')">ㅏ</button>
+                <button class="key" onclick="handleInput('ㅣ')">ㅣ</button>
+            </div>
+            <div class="key-row">
+                <button class="key" onclick="handleInput('ㅋ')">ㅋ</button>
+                <button class="key" onclick="handleInput('ㅌ')">ㅌ</button>
+                <button class="key" onclick="handleInput('ㅍ')">ㅍ</button>
+                <button class="key" onclick="handleInput('ㅊ')">ㅊ</button>
+                <button class="key" onclick="handleInput('ㅠ')">ㅠ</button>
+                <button class="key" onclick="handleInput('ㅜ')">ㅜ</button>
+                <button class="key" onclick="handleInput('ㅡ')">ㅡ</button>
+                <button class="key action-key" onclick="handleSubmit()">입력</button>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 4글자 이하의 단어 목록
+        const WORD_LIST = [
+            "사과", "바나나", "포도", "수박", "딸기", "참외", "레몬", "라임", "망고", "자두",
+            "하늘", "구름", "바다", "산호", "나무", "풀잎", "꽃잎", "바람", "노을", "태양",
+            "강아지", "고양이", "호랑이", "사자", "토끼", "다람쥐", "여우", "늑대", "표범", "사슴",
+            "한국", "서울", "부산", "제주", "독도", "인천", "대구", "광주", "대전", "울산",
+            "축구", "농구", "야구", "배구", "수영", "달리기", "체스", "골프", "탁구", "양궁",
+            "우주", "비행기", "자동차", "기차", "자전거", "버거", "피자", "초밥", "라면", "과자"
+        ];
+
+        // 게임 상태 관련 변수
+        let score = 0;
+        let timeLeft = 60; // 1분 (60초)
+        let lives = 3; // 남은 목숨
+        let gameActive = false;
+        let activeWords = []; // 현재 화면에 내려오는 단어들 [{ text, element, x, y, speed }]
+        
+        let timerInterval = null;
+        let animationFrameId = null;
+        let wordSpawnTimer = null;
+
+        // 한글 조합 관련 구조 (자음/모음 분리 조합기)
+        let currentJamoList = [];
+
+        // PC 실물 키보드(QWERTY 영문 입력)를 한글 자모로 매핑하는 테이블
+        const KEY_TO_JAMO = {
+            'q': 'ㅂ', 'Q': 'ㅃ', 'w': 'ㅈ', 'W': 'ㅉ', 'e': 'ㄷ', 'E': 'ㄸ',
+            'r': 'ㄱ', 'R': 'ㄲ', 't': 'ㅅ', 'T': 'ㅆ', 'y': 'ㅛ', 'u': 'ㅕ',
+            'i': 'ㅑ', 'o': 'ㅐ', 'O': 'ㅖ', 'p': 'ㅔ', 'P': 'ㅖ',
+            'a': 'ㅁ', 's': 'ㄴ', 'd': 'ㅇ', 'f': 'ㄹ', 'g': 'ㅎ',
+            'h': 'ㅗ', 'j': 'ㅓ', 'k': 'ㅏ', 'l': 'ㅣ',
+            'z': 'ㅋ', 'x': 'ㅌ', 'c': 'ㅊ', 'v': 'ㅍ', 'b': 'ㅠ',
+            'n': 'ㅜ', 'm': 'ㅡ'
+        };
+
+        // 한글 조합용 초성, 중성, 종성 테이블
+        const CHO = ["ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ", "ㄹ", "ㅁ", "ㅂ", "ㅃ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
+        const JOUNG = ["ㅏ", "ㅐ", "ㅑ", "ㅒ", "ㅓ", "ㅔ", "ㅕ", "ㅖ", "ㅗ", "ㅘ", "ㅙ", "ㅚ", "ㅛ", "ㅜ", "ㅝ", "ㅞ", "ㅟ", "ㅠ", "ㅡ", "ㅢ", "ㅣ"];
+        const JONG = ["", "ㄱ", "ㄲ", "ㄳ", "ㄴ", "ㄵ", "ㄶ", "ㄷ", "ㄹ", "ㄺ", "ㄻ", "ㄼ", "ㄽ", "ㄾ", "ㄿ", "ㅀ", "ㅁ", "ㅂ", "ㅄ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
+
+        // 복합 모음 Map
+        const DOUBLE_JOUNG = {
+            'ㅗㅏ': 'ㅘ', 'ㅗㅐ': 'ㅙ', 'ㅗㅣ': 'ㅚ',
+            'ㅜㅓ': 'ㅝ', 'ㅜㅔ': 'ㅞ', 'ㅜㅣ': 'ㅟ',
+            'ㅡㅣ': 'ㅢ'
+        };
+
+        // DOM 요소 Reference
+        const gameContainer = document.getElementById('game-container');
+        const scoreDisplay = document.getElementById('score-display');
+        const timeDisplay = document.getElementById('time-display');
+        const livesDisplay = document.getElementById('lives-display');
+        const typedTextDisplay = document.getElementById('typed-text');
+        const startOverlay = document.getElementById('start-overlay');
+        const gameOverOverlay = document.getElementById('game-over-overlay');
+        const finalScoreDisplay = document.getElementById('final-score');
+
+        // 게임 시작 함수
+        function startGame() {
+            // 이전 상태 초기화
+            score = 0;
+            timeLeft = 60;
+            lives = 3;
+            gameActive = true;
+            currentJamoList = [];
+            
+            scoreDisplay.textContent = score;
+            timeDisplay.textContent = timeLeft;
+            typedTextDisplay.textContent = '';
+            renderLives();
+
+            // 기존 단어 엘리먼트 제거
+            activeWords.forEach(w => w.element.remove());
+            activeWords = [];
+
+            // UI 제어
+            startOverlay.classList.add('hidden');
+            gameOverOverlay.classList.add('hidden');
+
+            // 타이머 실행 (1초 단위)
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timeDisplay.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+
+            // 단어 생성 및 게임 루프 시작
+            if (wordSpawnTimer) clearTimeout(wordSpawnTimer);
+            spawnWord();
+            scheduleNextSpawn();
+            
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            animationFrameId = requestAnimationFrame(updateGameLoop);
+        }
+
+        // PC 키보드 입력 이벤트 처리
+        window.addEventListener('keydown', (e) => {
+            if (!gameActive) {
+                if (e.key === 'Enter') {
+                    startGame();
+                }
+                return;
+            }
+
+            if (e.key === 'Enter' || e.key === ' ' || e.code === 'Space') {
+                e.preventDefault();
+                handleSubmit();
+            } else if (e.key === 'Backspace') {
+                e.preventDefault();
+                handleBackspace();
+            } else if (KEY_TO_JAMO[e.key]) {
+                handleInput(KEY_TO_JAMO[e.key]);
+            } else if (CHO.includes(e.key) || JOUNG.includes(e.key)) {
+                handleInput(e.key);
+            }
+        });
+
+        // 단어 주기적 생성 등록
+        function scheduleNextSpawn() {
+            if (!gameActive) return;
+
+            const elapsedTime = 60 - timeLeft;
+            let minTime = 1000;
+            let maxTime = 2500;
+            if (elapsedTime >= 25) {
+                minTime = 500;
+                maxTime = 1200;
+            }
+
+            const nextTime = Math.random() * (maxTime - minTime) + minTime;
+            wordSpawnTimer = setTimeout(() => {
+                spawnWord();
+                scheduleNextSpawn();
+            }, nextTime);
+        }
+
+        // 새로운 단어 생성
+        function spawnWord() {
+            if (!gameActive) return;
+
+            const elapsedTime = 60 - timeLeft;
+            let maxWords = 3;
+            if (elapsedTime >= 25) {
+                maxWords = Math.min(6, 3 + Math.floor((elapsedTime - 25) / 10) + 1);
+            }
+
+            if (activeWords.length >= maxWords) return;
+
+            const randomText = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)];
+            const wordElem = document.createElement('div');
+            wordElem.className = 'falling-word';
+            wordElem.textContent = randomText;
+
+            const containerWidth = gameContainer.clientWidth;
+            const posX = Math.random() * (containerWidth - 120) + 60;
+            const speed = Math.random() * 0.8 + 0.6;
+
+            wordElem.style.left = `${posX}px`;
+            wordElem.style.top = `0px`;
+
+            gameContainer.appendChild(wordElem);
+
+            activeWords.push({
+                text: randomText,
+                element: wordElem,
+                x: posX,
+                y: 0,
+                speed: speed
+            });
+        }
+
+        // 목숨 표시 업데이트 함수
+        function renderLives() {
+            const hearts = livesDisplay.querySelectorAll('.heart');
+            hearts.forEach((heart, index) => {
+                if (index < lives) {
+                    heart.classList.remove('lost');
+                } else {
+                    heart.classList.add('lost');
+                }
+            });
+        }
+
+        // 프레임 이동 처리 루프
+        function updateGameLoop() {
+            if (!gameActive) return;
+
+            const containerHeight = gameContainer.clientHeight;
+            const deadlineY = containerHeight - 40;
+
+            for (let i = activeWords.length - 1; i >= 0; i--) {
+                const word = activeWords[i];
+                word.y += word.speed;
+                word.element.style.top = `${word.y}px`;
+
+                if (word.y >= deadlineY) {
+                    word.element.remove();
+                    activeWords.splice(i, 1);
+
+                    lives--;
+                    renderLives();
+
+                    gameContainer.classList.add('danger-flash');
+                    setTimeout(() => gameContainer.classList.remove('danger-flash'), 400);
+
+                    if (lives <= 0) {
+                        endGame();
+                        return;
+                    }
+                }
+            }
+
+            animationFrameId = requestAnimationFrame(updateGameLoop);
+        }
+
+        // 게임 종료 처리
+        function endGame() {
+            gameActive = false;
+            clearInterval(timerInterval);
+            clearTimeout(wordSpawnTimer);
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+            gameOver(score);
+        }
+
+        // 규격 함수: 게임 종료 후 점수 보여주기
+        function gameOver(finalScore) {
+            finalScoreDisplay.textContent = finalScore;
+            gameOverOverlay.classList.remove('hidden');
+        }
+
+        // 한글 입력 처리
+        function handleInput(char) {
+            if (!gameActive) return;
+            currentJamoList.push(char);
+            renderTypedText();
+        }
+
+        // 백스페이스 처리
+        function handleBackspace() {
+            if (!gameActive || currentJamoList.length === 0) return;
+            currentJamoList.pop();
+            renderTypedText();
+        }
+
+        // 입력 제출 (엔터/스페이스/버튼 누름)
+        function handleSubmit() {
+            if (!gameActive) return;
+
+            const currentText = typedTextDisplay.textContent.trim();
+            if (!currentText) return;
+
+            let matchedIndex = activeWords.findIndex(w => w.text === currentText);
+
+            if (matchedIndex !== -1) {
+                const matched = activeWords[matchedIndex];
+                matched.element.style.backgroundColor = '#22c55e';
+                matched.element.style.borderColor = '#4ade80';
+
+                setTimeout(() => {
+                    matched.element.remove();
+                }, 100);
+
+                activeWords.splice(matchedIndex, 1);
+                score += 1;
+                scoreDisplay.textContent = score;
+
+                currentJamoList = [];
+                renderTypedText();
+            } else {
+                typedTextDisplay.style.color = '#ef4444';
+                setTimeout(() => {
+                    typedTextDisplay.style.color = '#38bdf8';
+                    currentJamoList = [];
+                    renderTypedText();
+                }, 200);
+            }
+        }
+
+        // 자음/모음 배열을 한글 글자로 합성
+        function renderTypedText() {
+            typedTextDisplay.textContent = composeHangul(currentJamoList);
+        }
+
+        function composeHangul(jamos) {
+            if (jamos.length === 0) return '';
+
+            let result = '';
+            let i = 0;
+
+            while (i < jamos.length) {
+                let c = jamos[i];
+
+                if (!CHO.includes(c)) {
+                    result += c;
+                    i++;
+                    continue;
+                }
+
+                let choIdx = CHO.indexOf(c);
+                let jungIdx = -1;
+                let jongIdx = 0;
+
+                if (i + 1 < jamos.length && JOUNG.includes(jamos[i + 1])) {
+                    let jungChar = jamos[i + 1];
+                    i += 2;
+
+                    if (i < jamos.length && JOUNG.includes(jamos[i])) {
+                        let combined = DOUBLE_JOUNG[jungChar + jamos[i]];
+                        if (combined) {
+                            jungChar = combined;
+                            i++;
+                        }
+                    }
+                    jungIdx = JOUNG.indexOf(jungChar);
+
+                    if (i < jamos.length && JONG.includes(jamos[i])) {
+                        if (i + 1 < jamos.length && JOUNG.includes(jamos[i + 1])) {
+                            // 다음 자음이 모음이면 이관
+                        } else {
+                            jongIdx = JONG.indexOf(jamos[i]);
+                            i++;
+                        }
+                    }
+
+                    let unicode = 0xAC00 + (choIdx * 21 * 28) + (jungIdx * 28) + jongIdx;
+                    result += String.fromCharCode(unicode);
+                } else {
+                    result += c;
+                    i++;
+                }
+            }
+
+            return result;
+        }
+    </script>
+</body>
+</html>
